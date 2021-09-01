@@ -1,10 +1,13 @@
-
-import requests
 import urllib3
+import requests
+
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 urllib3.disable_warnings()
 
-def get(url: str, params: dict = None, **kwargs):
+
+def get_api(url: str, params: dict = None, **kwargs):
     """Sends a GET request.
         Args:
         - url (str): URL for the new :class:`Request` object.
@@ -14,15 +17,13 @@ def get(url: str, params: dict = None, **kwargs):
         - (tuple(`Response <Response>` object, int)): Response of request and the status code
     """
     try:
-        response = requests.get(url, params=params, **kwargs, verify=False)
+        s = requests.Session()
+        retries = Retry(total=5, backoff_factor=1, status_forcelist=[502, 503, 504])
+        s.mount('http://', HTTPAdapter(max_retries=retries))
+        response = s.get(url, params=params, **kwargs, verify=False, timeout=560)
         response.raise_for_status()
     except requests.exceptions.HTTPError as httpErr:
         print("Http Error:", httpErr)
-    except requests.exceptions.ConnectionError as connErr:
-        print("Error Connecting:", connErr)
-    except requests.exceptions.Timeout as timeOutErr:
-        print("Timeout Error:", timeOutErr)
-    except requests.exceptions.RequestException as reqErr:
-        print("Something Else:", reqErr)
+        return None, 501
 
     return response, response.status_code
