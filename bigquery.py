@@ -46,4 +46,4 @@ class BqClient:
 
     def get_column_names(self, table_ref: str):
         table = self.client.get_table(table_ref)
-        return [field.name for field in table.schema]
+        return [field.name for field in table.schema[:-1]]
