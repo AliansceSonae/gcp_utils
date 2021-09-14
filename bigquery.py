@@ -31,6 +31,33 @@ class BqClient:
                     data['data'].append(row.values())
             return data
 
+    def fetch_all_dict(self, project_name: str, dataset: str, table: str, fields: list = [], where_clause: str = "1=1"):
+        if any([project_name is not None, dataset is not None, table is not None, fields is not None]):
+            SQL = f"""
+            SELECT
+                {','.join(fields) if fields is not [] else '*'}
+            FROM
+                {project_name}.{dataset}.{table}
+            WHERE
+                {where_clause}
+            """
+            res = self._query(SQL)
+            data = []
+            if res.total_rows > 0:
+                for row in res:
+                    dic = {}
+                    for field in res.schema:
+                        if row.get(field.name):
+                            if field.field_type == "DATE":
+                                dic[field.name] = datetime.strftime(row.get(field.name), "%Y-%m-%d")
+                                continue
+                            elif field.field_type == "DATETIME":
+                                dic[field.name] = datetime.strftime(row.get(field.name), "%Y-%m-%d %H:%M:%S")
+                                continue
+                        dic[field.name] = row.get(field.name)
+                    data.append(dic)
+            return data
+
     def get_max_datetime_field(self, project_name: str, dataset: str, table: str, field: str, trunc: str) -> datetime:
         SQL = f"""
             SELECT
